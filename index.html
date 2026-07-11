@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A2Z Foundation | Final Assessment</title>
+    <style>
+        .page-enroll { background: linear-gradient(135deg, #2c3e50, #4ca1af); min-height: 100vh; display: none; padding: 40px; }
+        .page-quiz { background: #f4f7f6; min-height: 100vh; display: none; padding: 40px; }
+        .page-cert { background: linear-gradient(135deg, #fdfcfb, #e2d1c3); min-height: 100vh; display: none; padding: 40px; }
+        .active { display: block; }
+        .card { background: white; padding: 40px; border-radius: 20px; max-width: 800px; margin: auto; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .q-box { margin-bottom: 25px; padding: 20px; border-left: 5px solid #27ae60; background: #fff; border-radius: 8px; }
+        .cert-container { border: 15px double #b8860b; padding: 50px; background: #fffcf0; text-align: center; }
+        button { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; font-size: 1.2rem; cursor: pointer; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; background: white; }
+        th, td { border: 1px solid #ccc; padding: 12px; text-align: left; }
+        .correct-row { color: #27ae60; font-weight: bold; }
+        .wrong-row { color: #c0392b; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="p1" class="page-enroll active">
+    <div class="card">
+        <h1>A2Z Foundation Enrollment</h1>
+        <input type="text" id="name" placeholder="Student Name">
+        <input type="text" id="class" placeholder="Class">
+        <input type="text" id="enroll" placeholder="Enrollment Number (e.g., A2Z12345)">
+        <div style="background: #f0f0f0; padding: 15px; border-radius: 8px;">
+            <label id="captcha-label"></label>
+            <input type="number" id="captcha" placeholder="Enter Answer">
+        </div>
+        <button onclick="verifyAndStart()">Start Examination</button>
+    </div>
+</div>
+
+<div id="p2" class="page-quiz">
+    <div class="card">
+        <h1>Examination Portal</h1>
+        <div id="quiz-content"></div>
+        <button onclick="submitQuiz()">Submit Answers</button>
+    </div>
+</div>
+
+<div id="p3" class="page-cert">
+    <div class="card cert-container">
+        <h1>CERTIFICATE</h1>
+        <h2 id="c-name"></h2>
+        <p>Class: <span id="c-class"></span> | Enroll: <span id="c-enroll"></span></p>
+        <h3 style="background: #2c3e50; color: white; padding: 10px;">Score: <span id="c-score"></span> / 40</h3>
+    </div>
+    <div class="card" style="margin-top: 20px;">
+        <h3>Detailed Mark Sheet Analysis</h3>
+        <table id="result-table">
+            <tr><th>Q#</th><th>Your Ans</th><th>Correct Ans</th><th>Status</th></tr>
+        </table>
+        <br><button onclick="window.print()">Print Certificate</button>
+    </div>
+</div>
+
+<script>
+    let num1, num2;
+    function generateCaptcha() {
+        num1 = Math.floor(Math.random() * 20) + 1;
+        num2 = Math.floor(Math.random() * 20) + 1;
+        document.getElementById('captcha-label').innerText = `CAPTCHA: What is ${num1} + ${num2}?`;
+    }
+    generateCaptcha();
+
+    const questions = [
+        {q: "Which gas is released when metal reacts with acid?", a: "Hydrogen", b: "Oxygen", c: "CO2", d: "Nitrogen", correct: "Hydrogen"},
+        {q: "What is the phenomenon of splitting white light?", a: "Refraction", b: "Reflection", c: "Dispersion", d: "Diffraction", correct: "Dispersion"},
+        {q: "Powerhouse of the cell?", a: "Nucleus", b: "Ribosome", c: "Mitochondria", d: "Lysosome", correct: "Mitochondria"},
+        {q: "SI unit of pressure?", a: "Newton", b: "Joule", c: "Pascal", d: "Watt", correct: "Pascal"},
+        {q: "Microorganism used for alcohol production?", a: "Bacteria", b: "Algae", c: "Yeast", d: "Virus", correct: "Yeast"},
+        {q: "Process of depositing zinc on iron?", a: "Electroplating", b: "Galvanization", c: "Corrosion", d: "Reduction", correct: "Galvanization"},
+        {q: "Which planet is the 'Morning Star'?", a: "Mars", b: "Mercury", c: "Venus", d: "Saturn", correct: "Venus"},
+        {q: "Chemical formula for salt?", a: "KCl", b: "NaCl", c: "HCl", d: "NaCO3", correct: "NaCl"},
+        {q: "Which friction is the least?", a: "Static", b: "Sliding", c: "Rolling", d: "Fluid", correct: "Rolling"},
+        {q: "Audible range of sound (Hz)?", a: "10-10,000", b: "20-20,000", c: "50-50,000", d: "100-100,000", correct: "20-20,000"},
+        {q: "Liquid metal at room temp?", a: "Bromine", b: "Gold", c: "Mercury", d: "Gallium", correct: "Mercury"},
+        {q: "Rapid burning is called?", a: "Spontaneous", b: "Explosion", c: "Rapid combustion", d: "Slow", correct: "Rapid combustion"},
+        {q: "Part of brain for balance?", a: "Cerebrum", b: "Cerebellum", c: "Medulla", d: "Spinal Cord", correct: "Cerebellum"},
+        {q: "Vitamin D deficiency?", a: "Scurvy", b: "Rickets", c: "Beriberi", d: "Goiter", correct: "Rickets"},
+        {q: "Largest gland?", a: "Pancreas", b: "Liver", c: "Thyroid", d: "Pituitary", correct: "Liver"},
+        {q: "5^3 - 4^2 = ?", a: "109", b: "125", c: "121", d: "99", correct: "109"},
+        {q: "Sum of interior angles of quadrilateral?", a: "180°", b: "270°", c: "360°", d: "540°", correct: "360°"},
+        {q: "Area 144 cm², perimeter?", a: "48 cm", b: "36 cm", c: "24 cm", d: "12 cm", correct: "48 cm"},
+        {q: "Solve 3x + 5 = 20, x=?", a: "4", b: "5", c: "6", d: "3", correct: "5"},
+        {q: "Prob. of even number on die?", a: "1/6", b: "1/3", c: "1/2", d: "2/3", correct: "1/2"},
+        {q: "Mean of 12, 15, 18, 20, 25?", a: "18", b: "20", c: "19", d: "17", correct: "18"},
+        {q: "Convert 0.075 to fraction?", a: "3/40", b: "7/100", c: "75/1000", d: "1/75", correct: "3/40"},
+        {q: "HCF of 24 and 36?", a: "6", b: "12", c: "8", d: "4", correct: "12"},
+        {q: "1500 ml in liters?", a: "0.15 L", b: "15 L", c: "1.5 L", d: "150 L", correct: "1.5 L"},
+        {q: "Simplify (-3)^2?", a: "6", b: "-9", c: "-6", d: "9", correct: "9"},
+        {q: "Ratio 3:4, total 84, boys?", a: "36", b: "48", c: "42", d: "30", correct: "36"},
+        {q: "Volume of cube, side 3cm?", a: "9 cm³", b: "27 cm³", c: "18 cm³", d: "6 cm³", correct: "27 cm³"},
+        {q: "Smallest prime number?", a: "0", b: "1", c: "2", d: "3", correct: "2"},
+        {q: "Sqrt of 1225?", a: "25", b: "35", c: "45", d: "55", correct: "35"},
+        {q: "Number + 20% = 480?", a: "400", b: "420", c: "380", d: "450", correct: "400"},
+        {q: "Missile Man of India?", a: "Vikram Sarabhai", b: "Homi Bhabha", c: "Kalam", d: "Satish Dhawan", correct: "Kalam"},
+        {q: "Largest desert?", a: "Thar", b: "Sahara", c: "Gobi", d: "Kalahari", correct: "Sahara"},
+        {q: "Science Day date?", a: "Feb 28", b: "Jan 26", c: "Aug 15", d: "Oct 2", correct: "Feb 28"},
+        {q: "Pink City?", a: "Jodhpur", b: "Jaipur", c: "Udaipur", d: "Bikaner", correct: "Jaipur"},
+        {q: "Wrote 'Discovery of India'?", a: "Gandhi", b: "Ambedkar", c: "Nehru", d: "Bose", correct: "Nehru"},
+        {q: "Capital of Canada?", a: "Toronto", b: "Vancouver", c: "Montreal", d: "Ottawa", correct: "Ottawa"},
+        {q: "Ocean south of India?", a: "Pacific", b: "Atlantic", c: "Indian", d: "Arctic", correct: "Indian"},
+        {q: "First woman PM of India?", a: "Indira Gandhi", b: "Sarojini Naidu", c: "Pratibha Patil", d: "Sushma Swaraj", correct: "Indira Gandhi"},
+        {q: "Bones in adult human?", a: "208", b: "206", c: "300", d: "200", correct: "206"},
+        {q: "Country with most pyramids?", a: "Egypt", b: "Sudan", c: "Mexico", d: "Peru", correct: "Sudan"}
+    ];
+
+    function verifyAndStart() {
+        const name = document.getElementById('name').value;
+        const cls = document.getElementById('class').value;
+        const enroll = document.getElementById('enroll').value;
+        if (!name || !cls || !enroll) { alert("Please fill all fields."); return; }
+        if (!enroll.startsWith("A2Z") || enroll.length < 5 || enroll.length > 20) { alert("Invalid Enrollment: Start with 'A2Z', 5-20 characters."); return; }
+        if (parseInt(document.getElementById('captcha').value) !== (num1 + num2)) { alert("Incorrect CAPTCHA."); generateCaptcha(); return; }
+        document.getElementById('p1').classList.remove('active');
+        document.getElementById('p2').classList.add('active');
+        let html = "";
+        questions.forEach((q, i) => {
+            html += `<div class="q-box"><b>${i+1}. ${q.q}</b><br>
+            <input type="radio" name="q${i}" value="${q.a}"> ${q.a}<br>
+            <input type="radio" name="q${i}" value="${q.b}"> ${q.b}<br>
+            <input type="radio" name="q${i}" value="${q.c}"> ${q.c}<br>
+            <input type="radio" name="q${i}" value="${q.d}"> ${q.d}</div>`;
+        });
+        document.getElementById('quiz-content').innerHTML = html;
+    }
+
+    function submitQuiz() {
+        let score = 0, table = document.getElementById('result-table');
+        questions.forEach((q, i) => {
+            const sel = document.querySelector(`input[name="q${i}"]:checked`);
+            let userAns = sel ? sel.value : "Unattempted";
+            let status = (sel && sel.value === q.correct) ? "Correct" : "Wrong";
+            if (status === "Correct") score++;
+            table.innerHTML += `<tr class="${status === 'Correct' ? 'correct-row' : 'wrong-row'}">
+                <td>${i+1}</td><td>${userAns}</td><td>${q.correct}</td><td>${status}</td></tr>`;
+        });
+        document.getElementById('p2').classList.remove('active');
+        document.getElementById('p3').classList.add('active');
+        document.getElementById('c-name').innerText = document.getElementById('name').value;
+        document.getElementById('c-class').innerText = document.getElementById('class').value;
+        document.getElementById('c-enroll').innerText = document.getElementById('enroll').value;
+        document.getElementById('c-score').innerText = score;
+    }
+</script>
+</body>
+</html>
